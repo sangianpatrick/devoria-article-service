@@ -14,6 +14,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/sangianpatrick/devoria-article-service/config"
 	"github.com/sangianpatrick/devoria-article-service/crypto"
 	"github.com/sangianpatrick/devoria-article-service/domain/account"
