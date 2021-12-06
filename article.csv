@@ -1,0 +1,15 @@
+"Table","Create Table"
+"article","CREATE TABLE `article` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `authorId` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `subtitle` varchar(255) NOT NULL,
+  `content` text NOT NULL,
+  `status` varchar(30) NOT NULL,
+  `createdAt` datetime(3) NOT NULL,
+  `publishedAt` datetime(3) DEFAULT NULL,
+  `lastModifiedAt` datetime(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `authorId` (`authorId`),
+  CONSTRAINT `article_ibfk_1` FOREIGN KEY (`authorId`) REFERENCES `Account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
