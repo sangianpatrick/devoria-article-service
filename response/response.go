@@ -59,7 +59,7 @@ func (r *responseImpl) Err() (err error) {
 
 func (r *responseImpl) JSON(w http.ResponseWriter) (err error) {
 	statusCode := r.getStatusCode(r.Status)
-	w.WriteHeader(statusCode)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
 	return json.NewEncoder(w).Encode(r)
 }

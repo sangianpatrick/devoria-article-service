@@ -12,13 +12,13 @@ type AccountContextKey struct{}
 
 // Account is a collection of proprty of account.
 type Account struct {
-	ID             int64
-	Email          string
-	Password       *string
-	FirstName      string
-	LastName       string
-	CreatedAt      time.Time
-	LastModifiedAt *time.Time
+	ID             int64      `json:"id"`
+	Email          string     `json:"email"`
+	Password       *string    `json:"password,omitempty"`
+	FirstName      string     `json:"firstName"`
+	LastName       string     `json:"lastName"`
+	CreatedAt      time.Time  `json:"createdAt"`
+	LastModifiedAt *time.Time `json:"lastModifiedAt"`
 }
 
 // CustomerStandardJWTClaims is a model.

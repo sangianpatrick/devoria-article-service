@@ -59,8 +59,13 @@ func (u *accountUsecaseImpl) generateBase64String(byteSize int) string {
 }
 
 func (u *accountUsecaseImpl) Register(ctx context.Context, params AccountRegistrationRequest) (resp response.Response) {
-	if _, err := u.repository.FindByEmail(ctx, params.Email); err == nil {
+	_, err := u.repository.FindByEmail(ctx, params.Email)
+	if err == nil {
 		return response.Error(response.StatusConflicted, nil, exception.ErrConflicted)
+	}
+
+	if err != exception.ErrNotFound {
+		return response.Error(response.StatusUnexpectedError, nil, exception.ErrInternalServer)
 	}
 
 	encryptedPassword := u.crypto.Encrypt(params.Password, u.generateBase64String(8))
@@ -72,7 +77,7 @@ func (u *accountUsecaseImpl) Register(ctx context.Context, params AccountRegistr
 	newAccount.CreatedAt = time.Now().In(u.location)
 
 	ID, err := u.repository.Save(ctx, newAccount)
-	if err == nil {
+	if err != nil {
 		return response.Error(response.StatusUnexpectedError, nil, exception.ErrInternalServer)
 	}
 	newAccount.ID = ID
@@ -84,7 +89,7 @@ func (u *accountUsecaseImpl) Register(ctx context.Context, params AccountRegistr
 	claims.ExpiresAt = time.Now().Add(time.Hour * 24 * 1).Unix()
 
 	token, err := u.jsonWebToken.Sign(ctx, claims)
-	if err == nil {
+	if err != nil {
 		return response.Error(response.StatusUnexpectedError, nil, exception.ErrInternalServer)
 	}
 

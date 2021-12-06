@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+
+	"github.com/sangianpatrick/devoria-article-service/exception"
 )
 
 type AccountRepository interface {
@@ -55,10 +57,11 @@ func (r *accountRepositoryImpl) Save(ctx context.Context, account Account) (ID i
 }
 
 func (r *accountRepositoryImpl) Update(ctx context.Context, ID int64, updatedAccount Account) (err error) {
-	command := fmt.Sprintf(`UPDATE %s SET password = ?, firstName = ?, lastName = ?, lastModifiedAt = ? WHERE id = ?`, r.tableName)
+	command := fmt.Sprintf(`UPDATE %s SET password = ?, firstName = ?, lastName = ?, lastModified = ? WHERE id = ?`, r.tableName)
 	stmt, err := r.db.PrepareContext(ctx, command)
 	if err != nil {
 		log.Println(err)
+		err = exception.ErrInternalServer
 		return
 	}
 	defer stmt.Close()
@@ -73,19 +76,21 @@ func (r *accountRepositoryImpl) Update(ctx context.Context, ID int64, updatedAcc
 
 	if err != nil {
 		log.Println(err)
+		err = exception.ErrInternalServer
 		return
 	}
 
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected < 1 {
-		return fmt.Errorf("not found")
+		err = exception.ErrNotFound
+		return
 	}
 
 	return
 }
 
 func (r *accountRepositoryImpl) FindByEmail(ctx context.Context, email string) (account Account, err error) {
-	query := fmt.Sprintf(`SELECT id, email, password, firstName, lastName, createdAt, lastModifiedAt FROM %s WHERE email = ?`, r.tableName)
+	query := fmt.Sprintf(`SELECT id, email, password, firstName, lastName, createdAt, lastModified FROM %s WHERE email = ?`, r.tableName)
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {
 		log.Println(err)
@@ -110,6 +115,7 @@ func (r *accountRepositoryImpl) FindByEmail(ctx context.Context, email string) (
 
 	if err != nil {
 		log.Println(err)
+		err = exception.ErrNotFound
 		return
 	}
 
@@ -125,10 +131,11 @@ func (r *accountRepositoryImpl) FindByEmail(ctx context.Context, email string) (
 }
 
 func (r *accountRepositoryImpl) FindByID(ctx context.Context, ID int64) (account Account, err error) {
-	query := fmt.Sprintf(`SELECT id, email, password, firstName, lastName, createdAt, lastModifiedAt FROM %s WHERE id = ?`, r.tableName)
+	query := fmt.Sprintf(`SELECT id, email, password, firstName, lastName, createdAt, lastModified FROM %s WHERE id = ?`, r.tableName)
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {
 		log.Println(err)
+		err = exception.ErrInternalServer
 		return
 	}
 	defer stmt.Close()
@@ -150,6 +157,7 @@ func (r *accountRepositoryImpl) FindByID(ctx context.Context, ID int64) (account
 
 	if err != nil {
 		log.Println(err)
+		err = exception.ErrNotFound
 		return
 	}
 

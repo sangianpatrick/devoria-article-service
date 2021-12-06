@@ -26,7 +26,7 @@ func NewAccountHTTPHandler(
 		Usecase:  usecase,
 	}
 
-	router.HandleFunc("/accounts/registration", basicAuthMiddleware.Verify(handler.Register)).Methods(http.MethodPost)
+	router.HandleFunc("/v1/accounts/registration", basicAuthMiddleware.Verify(handler.Register)).Methods(http.MethodPost)
 
 }
 
