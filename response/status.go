@@ -9,4 +9,5 @@ const (
 	StatusForbiddend          = "FORBIDDEN"
 	StatusInvalidPayload      = "INVALID_PAYLOAD"
 	StatusUnprocessabelEntity = "UNPROCESSABLE_ENTITY"
+	StatusUnauthorized        = "Unauthorized"
 )

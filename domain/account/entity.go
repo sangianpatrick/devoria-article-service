@@ -6,6 +6,10 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
+const AccountSessionKeyFormat = "account:session:%s"
+
+type AccountContextKey struct{}
+
 // Account is a collection of proprty of account.
 type Account struct {
 	ID             int64

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/sangianpatrick/devoria-article-service/exception"
 	"github.com/sangianpatrick/devoria-article-service/jwt"
 	"github.com/sangianpatrick/devoria-article-service/response"
+	"github.com/sangianpatrick/devoria-article-service/session"
 )
 
 type AccountUsecase interface {
@@ -20,10 +22,27 @@ type AccountUsecase interface {
 }
 
 type accountUsecaseImpl struct {
+	session      session.Session
 	jsonWebToken jwt.JSONWebToken
 	crypto       crypto.Crypto
 	location     *time.Location
 	repository   AccountRepository
+}
+
+func NewAccountUsecase(
+	session session.Session,
+	jsonWebToken jwt.JSONWebToken,
+	crypto crypto.Crypto,
+	location *time.Location,
+	repository AccountRepository,
+) AccountUsecase {
+	return &accountUsecaseImpl{
+		session:      session,
+		jsonWebToken: jsonWebToken,
+		crypto:       crypto,
+		location:     location,
+		repository:   repository,
+	}
 }
 
 func (u *accountUsecaseImpl) generateBase64String(byteSize int) string {
@@ -69,6 +88,13 @@ func (u *accountUsecaseImpl) Register(ctx context.Context, params AccountRegistr
 		return response.Error(response.StatusUnexpectedError, nil, exception.ErrInternalServer)
 	}
 
+	newAccountBuff, _ := json.Marshal(newAccount)
+
+	err = u.session.Set(ctx, fmt.Sprintf(AccountSessionKeyFormat, newAccount.Email), newAccountBuff)
+	if err != nil {
+		return response.Error(response.StatusUnexpectedError, nil, exception.ErrInternalServer)
+	}
+
 	// publish to kafke if availabe
 
 	newAccount.Password = nil
@@ -79,9 +105,54 @@ func (u *accountUsecaseImpl) Register(ctx context.Context, params AccountRegistr
 
 	return response.Success(response.StatusCreated, accountAuthenticationResponse)
 }
-func (u *accountUsecaseImpl) RegisterLogin(ctx context.Context, params AccountAuthenticationRequest) (resp response.Response) {
-	return
+
+func (u *accountUsecaseImpl) Login(ctx context.Context, params AccountAuthenticationRequest) (resp response.Response) {
+	account, err := u.repository.FindByEmail(ctx, params.Email)
+	if err != nil {
+		if err == exception.ErrNotFound {
+			return response.Error(response.StatusInvalidPayload, nil, exception.ErrBadRequest)
+		}
+		return response.Error(response.StatusUnexpectedError, nil, exception.ErrInternalServer)
+	}
+
+	encryptedPassword := u.crypto.Encrypt(params.Password, u.generateBase64String(8))
+	if encryptedPassword != *account.Password {
+		return response.Error(response.StatusInvalidPayload, nil, exception.ErrBadRequest)
+	}
+
+	claims := AccountStandardJWTClaims{}
+	claims.Email = account.Email
+	claims.Subject = fmt.Sprintf("%d", account.ID)
+	claims.IssuedAt = time.Now().Unix()
+	claims.ExpiresAt = time.Now().Add(time.Hour * 24 * 1).Unix()
+
+	token, err := u.jsonWebToken.Sign(ctx, claims)
+	if err == nil {
+		return response.Error(response.StatusUnexpectedError, nil, exception.ErrInternalServer)
+	}
+
+	accountBuff, _ := json.Marshal(account)
+
+	err = u.session.Set(ctx, fmt.Sprintf(AccountSessionKeyFormat, account.Email), accountBuff)
+	if err != nil {
+		return response.Error(response.StatusUnexpectedError, nil, exception.ErrInternalServer)
+	}
+
+	// publish to kafke if availabe
+
+	account.Password = nil
+
+	accountAuthenticationResponse := AccountAuthenticationResponse{}
+	accountAuthenticationResponse.Token = token
+	accountAuthenticationResponse.Profile = account
+
+	return response.Success(response.StatusOK, accountAuthenticationResponse)
 }
-func (u *accountUsecaseImpl) RegisterGetProfile(ctx context.Context) (resp response.Response) {
-	return
+func (u *accountUsecaseImpl) GetProfile(ctx context.Context) (resp response.Response) {
+	account, ok := ctx.Value(AccountContextKey{}).(Account)
+	if !ok {
+		return response.Error(response.StatusUnauthorized, nil, exception.ErrUnauthorized)
+	}
+
+	return response.Success(response.StatusOK, account)
 }
