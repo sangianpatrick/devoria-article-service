@@ -22,6 +22,7 @@ type AccountUsecase interface {
 }
 
 type accountUsecaseImpl struct {
+	globalIV     string
 	session      session.Session
 	jsonWebToken jwt.JSONWebToken
 	crypto       crypto.Crypto
@@ -30,6 +31,7 @@ type accountUsecaseImpl struct {
 }
 
 func NewAccountUsecase(
+	globalIV string,
 	session session.Session,
 	jsonWebToken jwt.JSONWebToken,
 	crypto crypto.Crypto,
@@ -37,6 +39,7 @@ func NewAccountUsecase(
 	repository AccountRepository,
 ) AccountUsecase {
 	return &accountUsecaseImpl{
+		globalIV:     globalIV,
 		session:      session,
 		jsonWebToken: jsonWebToken,
 		crypto:       crypto,
@@ -55,10 +58,13 @@ func (u *accountUsecaseImpl) generateBase64String(byteSize int) string {
 
 	// encoded := base64.StdEncoding.EncodeToString(b)
 	encoded := hex.EncodeToString(b)
+
 	return encoded
 }
 
 func (u *accountUsecaseImpl) Register(ctx context.Context, params AccountRegistrationRequest) (resp response.Response) {
+	fmt.Println("len", len(u.generateBase64String(8)))
+	fmt.Println(u.globalIV)
 	_, err := u.repository.FindByEmail(ctx, params.Email)
 	if err == nil {
 		return response.Error(response.StatusConflicted, nil, exception.ErrConflicted)
@@ -67,8 +73,7 @@ func (u *accountUsecaseImpl) Register(ctx context.Context, params AccountRegistr
 	if err != exception.ErrNotFound {
 		return response.Error(response.StatusUnexpectedError, nil, exception.ErrInternalServer)
 	}
-
-	encryptedPassword := u.crypto.Encrypt(params.Password, u.generateBase64String(8))
+	encryptedPassword := u.crypto.Encrypt(params.Password, u.globalIV)
 	newAccount := Account{}
 	newAccount.Email = params.Email
 	newAccount.Password = &encryptedPassword
@@ -120,7 +125,7 @@ func (u *accountUsecaseImpl) Login(ctx context.Context, params AccountAuthentica
 		return response.Error(response.StatusUnexpectedError, nil, exception.ErrInternalServer)
 	}
 
-	encryptedPassword := u.crypto.Encrypt(params.Password, u.generateBase64String(8))
+	encryptedPassword := u.crypto.Encrypt(params.Password, u.globalIV)
 	if encryptedPassword != *account.Password {
 		return response.Error(response.StatusInvalidPayload, nil, exception.ErrBadRequest)
 	}

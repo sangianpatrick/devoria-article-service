@@ -33,6 +33,7 @@ type Config struct {
 		Username string
 		Password string
 	}
+	GlobalIV string
 }
 
 func New() *Config {
@@ -42,6 +43,7 @@ func New() *Config {
 	c.loadRedis()
 	c.loadAes()
 	c.loadBasicAuth()
+	c.loadGlobalIV()
 
 	return c
 }
@@ -108,6 +110,14 @@ func (c *Config) loadBasicAuth() *Config {
 
 	c.BasicAuth.Username = username
 	c.BasicAuth.Password = password
+
+	return c
+}
+
+func (c *Config) loadGlobalIV() *Config {
+	globalIV := os.Getenv("GLOBAL_IV")
+	fmt.Println("global iv", globalIV)
+	c.GlobalIV = globalIV
 
 	return c
 }

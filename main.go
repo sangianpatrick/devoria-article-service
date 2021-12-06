@@ -52,7 +52,7 @@ func main() {
 	router := mux.NewRouter()
 
 	accountRepository := account.NewAccountRepository(db, "account")
-	accountUsecase := account.NewAccountUsecase(sess, jsonWebToken, encryption, location, accountRepository)
+	accountUsecase := account.NewAccountUsecase(cfg.GlobalIV, sess, jsonWebToken, encryption, location, accountRepository)
 	account.NewAccountHTTPHandler(router, basicAuthMiddleware, vld, accountUsecase)
 
 	server := &http.Server{
