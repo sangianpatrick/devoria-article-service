@@ -17,7 +17,7 @@ type AccountHTTPHandler struct {
 
 func NewAccountHTTPHandler(
 	router *mux.Router,
-	basicAuthMiddleware middleware.BasicAuth,
+	basicAuthMiddleware middleware.RouteMiddleware,
 	validate *validator.Validate,
 	usecase AccountUsecase,
 ) {
