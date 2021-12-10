@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-func TestRegister_Success(t *testing.T) {
+func TestUsecaseRegister_Success(t *testing.T) {
 	sess := new(sessionMocks.Session)
 	sess.On("Set", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("[]uint8")).Return(nil)
 

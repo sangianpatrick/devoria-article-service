@@ -16,7 +16,7 @@ var (
 	tableName string = "account"
 )
 
-func TestSave_Success(t *testing.T) {
+func TestRepositorySave_Success(t *testing.T) {
 	db, mock, _ := sqlmock.New()
 
 	ctx := context.TODO()
@@ -57,7 +57,7 @@ func TestSave_Success(t *testing.T) {
 	}
 }
 
-func TestFindByEmail_Success(t *testing.T) {
+func TestRepositoryFindByEmail_Success(t *testing.T) {
 	db, mock, _ := sqlmock.New()
 
 	ctx := context.TODO()
