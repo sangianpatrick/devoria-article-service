@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/sangianpatrick/devoria-article-service/config"
@@ -22,13 +20,17 @@ import (
 	"github.com/sangianpatrick/devoria-article-service/jwt"
 	"github.com/sangianpatrick/devoria-article-service/middleware"
 	"github.com/sangianpatrick/devoria-article-service/session"
+	"go.elastic.co/apm/module/apmgoredisv8"
+	"go.elastic.co/apm/module/apmgorilla"
+	"go.elastic.co/apm/module/apmsql"
+	_ "go.elastic.co/apm/module/apmsql/mysql"
 )
 
 func main() {
 	location, _ := time.LoadLocation("Asia/Jakarta")
 	cfg := config.New()
 
-	db, err := sql.Open("mysql", cfg.Mariadb.DSN)
+	db, err := apmsql.Open("mysql", cfg.Mariadb.DSN)
 	db.SetMaxOpenConns(cfg.Mariadb.MaxOpenConnections)
 	db.SetMaxIdleConns(cfg.Mariadb.MaxIdleConnections)
 	if err != nil {
@@ -42,6 +44,7 @@ func main() {
 	if _, err := rc.Ping(context.Background()).Result(); err != nil {
 		log.Fatal(err)
 	}
+	rc.AddHook(apmgoredisv8.NewHook())
 
 	vld := validator.New()
 	encryption := crypto.NewAES256CBC(cfg.AES.SecretKey)
@@ -50,6 +53,7 @@ func main() {
 	basicAuthMiddleware := middleware.NewBasicAuth(cfg.BasicAuth.Username, cfg.BasicAuth.Password)
 
 	router := mux.NewRouter()
+	apmgorilla.Instrument(router)
 
 	accountRepository := account.NewAccountRepository(db, "account")
 	accountUsecase := account.NewAccountUsecase(cfg.GlobalIV, sess, jsonWebToken, encryption, location, accountRepository)

@@ -7,6 +7,7 @@ import (
 
 	rv8 "github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
+	"go.elastic.co/apm"
 )
 
 const ()
@@ -29,8 +30,8 @@ func NewRedisSessionStoreAdapter(rdb rv8.UniversalClient, maxAge time.Duration) 
 
 // Set will store the key and value as session.
 func (s RedisSessionStoreAdapter) Set(ctx context.Context, key string, value []byte) (err error) {
-	// span, ctx := apm.StartSpan(ctx, "Redis Session Store: Set", "cache.session")
-	// defer span.End()
+	span, ctx := apm.StartSpan(ctx, "Redis Session Store: Set", "cache.session")
+	defer span.End()
 
 	_, err = s.c.SetEX(ctx, key, value, s.maxAge).Result()
 	if err != nil {
@@ -41,8 +42,8 @@ func (s RedisSessionStoreAdapter) Set(ctx context.Context, key string, value []b
 
 // Get get will get the session by the given key.
 func (s RedisSessionStoreAdapter) Get(ctx context.Context, key string) (value []byte, err error) {
-	// span, ctx := apm.StartSpan(ctx, "Redis Session Store: Get", "cache.session")
-	// defer span.End()
+	span, ctx := apm.StartSpan(ctx, "Redis Session Store: Get", "cache.session")
+	defer span.End()
 
 	value, err = s.c.Get(ctx, key).Bytes()
 	if err != nil {
@@ -58,8 +59,8 @@ func (s RedisSessionStoreAdapter) Get(ctx context.Context, key string) (value []
 
 // Update will update the session with but never change the time to live.
 func (s RedisSessionStoreAdapter) Update(ctx context.Context, key string, value []byte) (err error) {
-	// span, ctx := apm.StartSpan(ctx, "Redis Session Store: Update", "cache.session")
-	// defer span.End()
+	span, ctx := apm.StartSpan(ctx, "Redis Session Store: Update", "cache.session")
+	defer span.End()
 
 	watchTxID := fmt.Sprintf("watch:transaction:session:%s", key)
 
@@ -88,8 +89,8 @@ func (s RedisSessionStoreAdapter) Update(ctx context.Context, key string, value 
 
 // Delete will delete the session.
 func (s RedisSessionStoreAdapter) Delete(ctx context.Context, key string) (err error) {
-	// span, ctx := apm.StartSpan(ctx, "Redis Session Store: Delete", "cache.session")
-	// defer span.End()
+	span, ctx := apm.StartSpan(ctx, "Redis Session Store: Delete", "cache.session")
+	defer span.End()
 
 	watchTxID := fmt.Sprintf("watch:transaction:session:%s", key)
 

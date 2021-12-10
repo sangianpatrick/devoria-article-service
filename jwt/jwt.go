@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/dgrijalva/jwt-go"
+	"go.elastic.co/apm"
 )
 
 // Errors.
@@ -32,8 +33,8 @@ func NewJSONWebToken(privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) JSONW
 
 // Sign will generate new jwt token.
 func (a *jsonWebToken) Sign(ctx context.Context, claims jwt.Claims) (tokenString string, err error) {
-	// span, _ := apm.StartSpan(ctx, "JSONWebToken: Sign", "token.jwt")
-	// defer span.End()
+	span, _ := apm.StartSpan(ctx, "JSONWebToken: Sign", "token.jwt")
+	defer span.End()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	return token.SignedString(a.privateKey)
@@ -41,8 +42,8 @@ func (a *jsonWebToken) Sign(ctx context.Context, claims jwt.Claims) (tokenString
 
 // Parse will parse the token string to bearer claims.
 func (a *jsonWebToken) Parse(ctx context.Context, tokenString string, claims jwt.Claims) (err error) {
-	// span, _ := apm.StartSpan(ctx, "JSONWebToken: Parse", "token.jwt")
-	// defer span.End()
+	span, _ := apm.StartSpan(ctx, "JSONWebToken: Parse", "token.jwt")
+	defer span.End()
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, a.keyFunc)
 	if err = a.checkError(err); err != nil {
