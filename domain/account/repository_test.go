@@ -56,3 +56,47 @@ func TestSave_Success(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestFindByEmail_Success(t *testing.T) {
+	db, mock, _ := sqlmock.New()
+
+	ctx := context.TODO()
+	expectedAccountPassowrd := "P@sswordTest"
+	expectedAccountEmail := "john.doe@email.com"
+	expectedRows := sqlmock.NewRowsWithColumnDefinition(
+		sqlmock.NewColumn("id"),
+		sqlmock.NewColumn("email"),
+		sqlmock.NewColumn("password"),
+		sqlmock.NewColumn("firstName"),
+		sqlmock.NewColumn("lastName"),
+		sqlmock.NewColumn("createdAt"),
+		sqlmock.NewColumn("lastModified"),
+	).AddRow(
+		int64(1),
+		expectedAccountEmail,
+		&expectedAccountPassowrd,
+		"John",
+		"Doe",
+		time.Now(),
+		nil,
+	)
+
+	expectedQuery := fmt.Sprintf(`SELECT id, email, password, firstName, lastName, createdAt, lastModified FROM %s WHERE email = ?`, tableName)
+	expectedArgs := make([]driver.Value, 0)
+	expectedArgs = append(expectedArgs, expectedAccountEmail)
+
+	mock.ExpectPrepare(expectedQuery).ExpectQuery().
+		WithArgs(expectedArgs...).
+		WillReturnRows(expectedRows)
+
+	accountRepository := account.NewAccountRepository(db, tableName)
+	existingAccount, err := accountRepository.FindByEmail(ctx, expectedAccountEmail)
+
+	assert.NoError(t, err, "should not be error")
+	assert.Equal(t, expectedAccountEmail, existingAccount.Email, fmt.Sprintf("email should be '%s'", expectedAccountEmail))
+	assert.Nil(t, existingAccount.LastModifiedAt, "last modified at should be nil")
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error(err)
+	}
+}
